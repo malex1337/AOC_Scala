@@ -27,7 +27,7 @@ class Day1(fileName: String) extends Day(fileName) {
     println(s"Part 2: $sum")
   }
 
-  private def extractTuples(): (Array[(Int, Int)], Array[(Int, Int)]) = {
+  private def extractTuples(): (Seq[(Int, Int)], Seq[(Int, Int)]) = {
     lines
       .flatMap(line => line.split(";"))
       .map(_.toInt)
@@ -38,6 +38,6 @@ class Day1(fileName: String) extends Day(fileName) {
 
 object Day1 {
   def main(args: Array[String]): Unit = {
-    Day1("/aoc24_d1").runAll()
+    Day1("aoc24_d1").runAll()
   }
 }

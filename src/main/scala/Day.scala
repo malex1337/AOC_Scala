@@ -1,8 +1,10 @@
 package com.malex1337
 
+import scala.io.Source
+
 abstract class Day(filename: String) {
-  val lines: Array[String] = ResourceLoader.loadFileFromResources(filename)
-  
+  val lines: Seq[String] = Source.fromResource(s"$filename").getLines().toSeq
+
   protected def part1(): Unit
 
   protected def part2(): Unit

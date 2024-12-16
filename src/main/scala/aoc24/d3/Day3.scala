@@ -35,6 +35,6 @@ class Day3(fileName: String) extends Day(fileName) {
 
 object Day3 {
   def main(args: Array[String]): Unit = {
-    Day3("/aoc24_d3").runAll()
+    Day3("aoc24_d3").runAll()
   }
 }

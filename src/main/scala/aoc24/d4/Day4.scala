@@ -67,6 +67,6 @@ class Point(val x: Integer, val y: Integer)
 
 object Day4 {
   def main(args: Array[String]): Unit = {
-    Day4("/aoc24_d4").runAll()
+    Day4("aoc24_d4").runAll()
   }
 }
