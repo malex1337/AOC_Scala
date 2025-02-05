@@ -4,9 +4,10 @@ import com.malex1337.Day
 import lib.Pos
 
 import scala.collection.mutable
+import lib.GridExtensions._
 
 class Day12(fileName: String) extends Day(fileName) {
-  val grid: Array[Array[Char]] = lines.map(_.toCharArray).toArray
+  private val grid = lines.map(_.toCharArray).toArray
   var visited: Array[Array[Boolean]] = Array.fill(grid.length, grid(0).length)(false)
 
   override protected def part1(): Unit = {
@@ -62,7 +63,7 @@ class Day12(fileName: String) extends Day(fileName) {
         val region = mutable.Set[Pos]()
         region.add(Pos(col, row))
         visited.add(Pos(col, row))
-        region.addAll(findNeighbor(gridVal(Pos(col, row)), Pos(col, row), visited))
+        region.addAll(findNeighbor(grid.value(Pos(col, row)), Pos(col, row), visited))
         regions.add(region)
       }
     }
@@ -74,7 +75,7 @@ class Day12(fileName: String) extends Day(fileName) {
 
     Pos.allDirections.foreach(d => {
       val next = p + d
-      if (isInGrid(next) && grid(next.row())(next.col()) == c) {
+      if (grid.validPos(next) && grid(next.row())(next.col()) == c) {
         if (!visited.contains(next)) {
           visited.add(next)
           positions.add(next)
@@ -89,28 +90,22 @@ class Day12(fileName: String) extends Day(fileName) {
   // DFS - Depth first search
   // First expands in every possible branch, then searches/adds up
   private def dfs(pos: Pos, c: Char): (Int, Int) = {
-    visited(pos.row())(pos.col()) = true
+    visited.set(pos, true)
     var area = 1
     var perimeter = 0
 
     Pos.allDirections.foreach(dir => {
       val newPos = pos + dir
-      if (isInGrid(newPos) && gridVal(newPos) == c && !visited(newPos.row())(newPos.col())) {
-        val (subArea, subPerimeter) = dfs(newPos, gridVal(newPos))
+      if (grid.validPos(newPos) && grid.value(newPos) == c && !visited.value(newPos)) {
+        val (subArea, subPerimeter) = dfs(newPos, grid.value(newPos))
         area += subArea
         perimeter += subPerimeter
-      } else if (!isInGrid(newPos) || gridVal(newPos) != c) {
+      } else if (!grid.validPos(newPos) || grid.value(newPos) != c) {
         perimeter += 1
       }
     })
     (area, perimeter)
   }
-
-  private def gridVal(pos: Pos): Char = grid(pos.row())(pos.col())
-
-  private def isInGrid(pos: Pos): Boolean =
-    pos.col() >= 0 && pos.col() < grid(0).length
-      && pos.row() >= 0 && pos.row() < grid.length
 }
 
 object Day12 {

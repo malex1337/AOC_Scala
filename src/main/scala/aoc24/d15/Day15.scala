@@ -7,6 +7,7 @@ import scala.collection.mutable.ListBuffer
 import scala.util.boundary
 import scala.util.boundary.break
 import scala.util.control.Breaks
+import lib.GridExtensions._
 
 class Day15(fileName: String) extends Day(fileName) {
   private val dirOffset = Map(
@@ -32,7 +33,7 @@ class Day15(fileName: String) extends Day(fileName) {
 
   private val grid = lines.takeWhile(_.nonEmpty).map(_.toCharArray).map(c => c.map(Cell.fromChar(_))).toArray
   private val moves = lines.drop(grid.length).flatMap(_.toCharArray).map(c => dirOffset(c)).toArray
-  private var robot = findRobot()
+  private var robot = grid.findFirst(_ == Cell.Robot).get
 
   override protected def part1(): Unit = {
     printMoves()
@@ -47,7 +48,7 @@ class Day15(fileName: String) extends Day(fileName) {
       boundary {
         while (true) {
           current += move
-          grid(current.y)(current.x) match {
+          grid.value(current) match {
             case Cell.Border =>
               shouldMove = false
               break()
@@ -60,9 +61,9 @@ class Day15(fileName: String) extends Day(fileName) {
       }
 
       if (shouldMove) {
-        grid(robot.y)(robot.x) = Cell.Free
-        grid(robot.y + move.y)(robot.x + move.x) = Cell.Robot
-        boxes.foreach(b => grid(b.y + move.y)(b.x + move.x) = Cell.Box)
+        grid.set(robot, Cell.Free)
+        grid.set(robot + move, Cell.Robot)
+        boxes.foreach(b => grid.set(b + move, Cell.Box))
         robot = robot + move
       }
     })
@@ -77,11 +78,11 @@ class Day15(fileName: String) extends Day(fileName) {
   }
 
   override protected def part2(): Unit = {
-    val expandedGrid: Array[Array[Char]] = lines.takeWhile(_.nonEmpty).map(_.toCharArray).map(c => c.flatMap(c2 => expansion(c2))).toArray
-    robot = findRobotExpanded(expandedGrid)
+    val expandedGrid = lines.takeWhile(_.nonEmpty).map(_.toCharArray).map(c => c.flatMap(c2 => expansion(c2))).toArray
+    robot = expandedGrid.findFirst(_ == '@').get
 
     moves.foreach(move => {
-      var boxes: ListBuffer[Pos] = ListBuffer(robot)
+      val boxes: ListBuffer[Pos] = ListBuffer(robot)
       var shouldMove = true
 
       val outerLoop = new Breaks
@@ -93,7 +94,7 @@ class Day15(fileName: String) extends Day(fileName) {
           innerLoop.breakable {
             val nextPos = box + move
             if boxes.contains(nextPos) then innerLoop.break()
-            expandedGrid(nextPos.y)(nextPos.x) match {
+            expandedGrid.value(nextPos) match {
               case '#' =>
                 shouldMove = false
                 outerLoop.break()
@@ -110,22 +111,21 @@ class Day15(fileName: String) extends Day(fileName) {
         }
       }
       if (shouldMove) {
-        val gridCopy = expandedGrid.map(_.clone())
-        expandedGrid(robot.y)(robot.x) = '.'
-        expandedGrid(robot.y + move.y)(robot.x + move.x) = '@'
+        val gridCopy = expandedGrid.copy()
+        expandedGrid.set(robot, '.')
+        expandedGrid.set(robot + move, '@')
 
         boxes.drop(1).foreach(box => {
-          expandedGrid(box.y)(box.x) = '.'
+          expandedGrid.set(box, '.')
         })
 
         boxes.drop(1).foreach(box => {
-          expandedGrid(box.y + move.y)(box.x + move.x) = gridCopy(box.y)(box.x)
+          expandedGrid.set(box + move, gridCopy.value(box))
         })
 
         robot = robot + move
       }
 
-      //printExpandedGrid(expandedGrid)
     })
 
     var gpsSum = 0
@@ -149,29 +149,7 @@ class Day15(fileName: String) extends Day(fileName) {
       println()
     }
 
-  private def printExpandedGrid(expandedGrid: Array[Array[Char]]): Unit =
-    for (i <- expandedGrid.indices) {
-      for (j <- expandedGrid(i).indices) {
-        print(expandedGrid(i)(j))
-      }
-      println()
-    }
-
   private def printMoves(): Unit = moves.foreach(d => print(reverseOffset(d) + " "))
-
-  private def findRobot(): Pos = boundary {
-    for (i <- grid.indices; j <- grid(i).indices) {
-      if (grid(i)(j) == Cell.Robot) break(Pos(j, i))
-    }
-    Pos(-1, -1)
-  }
-
-  private def findRobotExpanded(expandedGrid: Array[Array[Char]]): Pos = boundary {
-    for (i <- expandedGrid.indices; j <- expandedGrid(i).indices) {
-      if (expandedGrid(i)(j) == '@') break(Pos(j, i))
-    }
-    Pos(-1, -1)
-  }
 
   enum Cell:
     case Border, Box, Free, Robot
@@ -189,5 +167,9 @@ class Day15(fileName: String) extends Day(fileName) {
 object Day15 {
   def main(args: Array[String]): Unit = {
     Day15("aoc24_d15").runAll()
+    /*
+    1465523
+    1471049
+     */
   }
 }

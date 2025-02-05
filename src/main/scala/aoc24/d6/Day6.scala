@@ -3,21 +3,19 @@ package aoc24.d6
 import com.malex1337.Day
 
 import scala.annotation.tailrec
-
+import lib.GridExtensions.*
+import lib.Pos
 
 class Day6(fileName: String) extends Day(fileName) {
-  var visitedPositions = 0
+  private var visitedPositions = 0
 
   override protected def part1(): Unit = {
     val grid = lines.map(l => l.toCharArray).toArray
-    val position = grid.zipWithIndex.flatMap { case (row, rowIndex) =>
-      row.zipWithIndex.collect {
-        case (char, colIndex) if char == '^' => Pos(colIndex, rowIndex)
-      }
-    }.head
-    grid(position.y)(position.x) = '.'
 
-    val uniquePositions = walk(grid, position, Direction(), Set(position))
+    val position = grid.findFirst(_ == '^').get
+    grid.set(position, '.')
+
+    val uniquePositions = walk(grid, position, Pos.up, Set(position))
 
     println(s"Part 1: ${uniquePositions.size}")
   }
@@ -26,30 +24,20 @@ class Day6(fileName: String) extends Day(fileName) {
     var amountLoopingPositions = 0
     val grid = lines.map(l => l.toCharArray).toArray
 
-    val possibleObstacles =
-      for
-        row <- grid.indices
-        col <- grid(row).indices
-        if grid(row)(col) != '^'
-      yield Pos(col, row)
-
-    val guardPosition = grid.zipWithIndex.flatMap { case (row, rowIndex) =>
-      row.zipWithIndex.collect {
-        case (char, colIndex) if char == '^' => Pos(colIndex, rowIndex)
-      }
-    }.head
-    grid(guardPosition.y)(guardPosition.x) = '.'
+    val possibleObstacles = grid.findAllMatching(_ != '^')
+    val guardPosition = grid.findFirst(_ == '^').get
+    grid.set(guardPosition, '.')
 
     for (possibleObstacle <- possibleObstacles) {
-      val gridCopy = grid.map(_.clone())
-      gridCopy(possibleObstacle.y)(possibleObstacle.x) = '#'
+      val gridCopy = grid.copy()
+      gridCopy.set(possibleObstacle, '#')
       visitedPositions = 0
       try {
-        walk(gridCopy, Pos(guardPosition.x, guardPosition.y), Direction(), Set(guardPosition))
-      }catch
+        walk(gridCopy, guardPosition, Pos.up, Set(guardPosition))
+      } catch
         case e: LoopingException =>
-      if(visitedPositions >= grid.length * grid(0).length + 1)
-        amountLoopingPositions+=1
+      if (visitedPositions >= grid.length * grid(0).length + 1)
+        amountLoopingPositions += 1
 
       visitedPositions = 0
     }
@@ -57,46 +45,41 @@ class Day6(fileName: String) extends Day(fileName) {
     println(s"Amnt of looping positions: $amountLoopingPositions")
   }
 
-  @tailrec private def walk(grid: Array[Array[Char]], pos: Pos, dir: Direction, visited: Set[Pos]): Set[Pos] = {
-    if(visitedPositions >= grid.length * grid(0).length + 1)
+  @tailrec private def walk(grid: Array[Array[Char]], pos: Pos, dir: Pos, visited: Set[Pos]): Set[Pos] = {
+    if (visitedPositions >= grid.rows() * grid.cols() + 1)
       throw new LoopingException
 
-    val updated = if grid(pos.y)(pos.x) == '.' then visited + pos else visited
-    val newPos = pos.walk(dir)
+    val updated = if grid.value(pos) == '.' then visited + pos else visited
+    val newPos = pos + dir
 
     visitedPositions += 1
 
     charAt(grid, newPos) match
       case Some('.') => walk(grid, newPos, dir, updated)
-      case Some(_) => walk(grid, pos, dir.turnRight(), updated)
+      case Some(_) => walk(grid, pos, turnRight(dir), updated)
       case None => updated
   }
 
   def charAt(grid: Array[Array[Char]], pos: Pos): Option[Char] = {
-    if pos.x >= 0 && pos.y >= 0 && pos.x < grid(0).length && pos.y < grid.length then Some(grid(pos.y)(pos.x)) else None
+    if grid.validPos(pos) then Some(grid.value(pos)) else None
   }
 
-  case class Direction(var x: Int = 0, var y: Int = -1) {
-    def turnRight(): Direction = {
-      (x, y) match {
-        case (0, -1) => Direction(1, 0) // UP > RIGHT
-        case (1, 0) => Direction(0, 1) // RIGHT > DOWN
-        case (0, 1) => Direction(-1, 0) // DOWN > LEFT
-        case (-1, 0) => Direction(0, -1) // UP
-      }
+  private def turnRight(pos: Pos): Pos =
+    pos match {
+      case Pos.up => Pos.right
+      case Pos.right => Pos.down
+      case Pos.down => Pos.left
+      case Pos.left => Pos.up
     }
-  }
 
-  case class Pos(var x: Int, var y: Int) {
-    def walk(direction: Direction): Pos = Pos(x + direction.x, y + direction.y)
-  }
-
-  class LoopingException() extends Exception()
+  private class LoopingException extends Exception()
 
 }
 
 object Day6 {
   def main(args: Array[String]): Unit = {
     Day6("aoc24_d6").runAll()
+    // 5551
+    // 1939
   }
 }
